@@ -1,0 +1,32 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: nexentastor5-nfs-provisioner
+spec:
+  serviceAccountName: nexentastor5-nfs-provisioner
+  containers:
+    - name: nexentastor5-nfs-provisioner
+      image: nexentastor5-nfs-provisioner:latest
+      imagePullPolicy: "IfNotPresent"
+      env:
+        - name: NEXENTA_HOSTNAME
+          value: 10.3.199.29
+        - name: NEXENTA_HOSTPORT
+          value: "8443"
+        - name: NEXENTA_PASSWORD
+          value: "nexenta1"
+        - name: NEXENTA_USERNAME
+          value: "admin"
+        - name: NEXENTA_HOSTPOOL
+          value: QA
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+      volumeMounts:
+        - name: src
+          mountPath: "/mnt"
+  volumes:
+    - name: src
+      hostPath:
+        path: "/mnt"

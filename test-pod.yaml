@@ -1,0 +1,21 @@
+kind: Pod
+apiVersion: v1
+metadata:
+  name: test-pod
+spec:
+  containers:
+  - name: test-pod
+    image: gcr.io/google_containers/busybox:1.24
+    command:
+      - "/bin/sh"
+    args:
+      - "-c"
+      - "touch /mnt/SUCCESS && sleep 100000000 || exit 1"
+    volumeMounts:
+      - name: nexentastor5-nfs-pvc
+        mountPath: "/mnt"
+  restartPolicy: "Never"
+  volumes:
+    - name: nexentastor5-nfs-pvc
+      persistentVolumeClaim:
+        claimName: nexentastor5-nfs
