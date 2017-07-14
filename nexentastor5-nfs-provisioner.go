@@ -21,6 +21,7 @@ import (
     "errors"
     "time"
     "fmt"
+    "flag"
     "encoding/json"
     "io/ioutil"
     "net/http"
@@ -44,6 +45,10 @@ const (
     provisionerName           = "nexenta.com/k8s-nexentastor5-nfs"
     exponentialBackOffOnError = false
     failedRetryThreshold      = 5
+    leasePeriod               = controller.DefaultLeaseDuration
+    retryPeriod               = controller.DefaultRetryPeriod
+    renewDeadline             = controller.DefaultRenewDeadline
+    termLimit                 = controller.DefaultTermLimit
     defaultParentFilesystem   = "kubernetes"
 )
 
@@ -95,7 +100,7 @@ func NewNexentaStorProvisioner() controller.Provisioner {
         parentFS = defaultParentFilesystem
     }
     auth := Auth{Username: username, Password: password}
-    p := &NexentaStorProvisioner{
+    return &NexentaStorProvisioner{
         Identity: nodeName,
         Hostname: hostname,
         Port:     port,
@@ -105,8 +110,6 @@ func NewNexentaStorProvisioner() controller.Provisioner {
         Auth:     auth,
         Endpoint: fmt.Sprintf("https://%s:%d/", hostname, port),
     }
-    p.Initialize()
-    return p
 }
 
 func (p *NexentaStorProvisioner) Initialize() {
@@ -343,6 +346,9 @@ func (p *NexentaStorProvisioner) checkError(resp *http.Response) (err error) {
 }
 
 func main() {
+    flag.Parse()
+    flag.Set("logtostderr", "true")
+    
     syscall.Umask(0)
 
     // Create an InClusterConfig and use it to create a client for the controller
@@ -366,8 +372,9 @@ func main() {
     // Create the provisioner: it implements the Provisioner interface expected by
     // the controller
     nexentaStorProvisioner := NewNexentaStorProvisioner()
+
     // Start the provision controller which will dynamically provision nexentaStor
     // PVs
-    pc := controller.NewProvisionController(clientset, provisionerName, nexentaStorProvisioner, serverVersion.GitVersion)
+    pc := controller.NewProvisionController(clientset, resyncPeriod, provisionerName, nexentaStorProvisioner, serverVersion.GitVersion, exponentialBackOffOnError, failedRetryThreshold, leasePeriod, renewDeadline, retryPeriod, termLimit)
     pc.Run(wait.NeverStop)
 }

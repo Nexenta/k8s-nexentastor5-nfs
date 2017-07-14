@@ -1,6 +1,4 @@
-You must extract the files in you gopath. I used #GOPATH/nexenta.
 
-After you setup you go environment someone needs to issue:
 
 ```
 make image
@@ -12,16 +10,14 @@ kubectl create -f clusterrole.yaml
 kubectl create -f clusterrolebinding.yaml
 
 kubectl create -f serviceaccount.yaml
-
 ```
 
-Check variable in pod.yaml and create a pool with the name give in pod.yaml NEXENTA_HOSTPOOL on the nexenta-stor (I used nexenta fusion but I guess it is as well possible through ssh/rest)
+Create a pool on NexentaStor appliance and pass it to NEXENTA_HOSTPOOL param in pod.yaml.
+Configure all other values in pod.yaml 
 
 ```
 kubectl create -f pod.yaml
-
 ```
-
 
 You should see:
 
@@ -31,21 +27,17 @@ po/nexenta-stor-provisioner   1/1       Running   0
 
 Create a claim:
 
-```
-kubectl create -f claim.yaml
-```
+# kubectl create –f claim.yaml
 
 Start a pod mounting the nfs
 
-```
-kubectl create -f test-pod.yaml
-```
+# kubectl create –f test-pod.yaml
 
 
 
 That’s it! You should see the pod started and mounting the PV:
 
-kubectl exec -it test-pod sh
+enikher@k8s-2:~/nexenta$ kubectl exec -it test-pod sh
 
 / # df -h
 

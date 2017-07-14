@@ -14,7 +14,7 @@
 
 .PHONY: image
 
-IMAGE?=nexentastor5-nfs-provisioner
+IMAGE?=quay.io/alexey_khodos/nexentastor5-nfs-provisioner
 
 image: nexentastor5-nfs-provisioner
 	docker build -t $(IMAGE) -f Dockerfile.scratch .
