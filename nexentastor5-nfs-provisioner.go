@@ -44,10 +44,6 @@ const (
     provisionerName           = "nexenta.com/k8s-nexentastor5-nfs"
     exponentialBackOffOnError = false
     failedRetryThreshold      = 5
-    leasePeriod               = controller.DefaultLeaseDuration
-    retryPeriod               = controller.DefaultRetryPeriod
-    renewDeadline             = controller.DefaultRenewDeadline
-    termLimit                 = controller.DefaultTermLimit
     defaultParentFilesystem   = "kubernetes"
 )
 
@@ -99,7 +95,7 @@ func NewNexentaStorProvisioner() controller.Provisioner {
         parentFS = defaultParentFilesystem
     }
     auth := Auth{Username: username, Password: password}
-    return &NexentaStorProvisioner{
+    p := &NexentaStorProvisioner{
         Identity: nodeName,
         Hostname: hostname,
         Port:     port,
@@ -109,6 +105,8 @@ func NewNexentaStorProvisioner() controller.Provisioner {
         Auth:     auth,
         Endpoint: fmt.Sprintf("https://%s:%d/", hostname, port),
     }
+    p.Initialize()
+    return p
 }
 
 func (p *NexentaStorProvisioner) Initialize() {
@@ -368,9 +366,8 @@ func main() {
     // Create the provisioner: it implements the Provisioner interface expected by
     // the controller
     nexentaStorProvisioner := NewNexentaStorProvisioner()
-
     // Start the provision controller which will dynamically provision nexentaStor
     // PVs
-    pc := controller.NewProvisionController(clientset, resyncPeriod, provisionerName, nexentaStorProvisioner, serverVersion.GitVersion, exponentialBackOffOnError, failedRetryThreshold, leasePeriod, renewDeadline, retryPeriod, termLimit)
+    pc := controller.NewProvisionController(clientset, provisionerName, nexentaStorProvisioner, serverVersion.GitVersion)
     pc.Run(wait.NeverStop)
 }

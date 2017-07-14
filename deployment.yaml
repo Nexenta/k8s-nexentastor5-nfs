@@ -1,0 +1,71 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: nexentastor5-nfs-provisioner
+  labels:
+    app: nexentastor5-nfs-provisioner
+spec:
+  ports:
+    - name: nfs
+      port: 2049
+    - name: mountd
+      port: 20048
+    - name: rpcbind
+      port: 111
+    - name: rpcbind-udp
+      port: 111
+      protocol: UDP
+  selector:
+    app: nexentastor5-nfs-provisioner
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: nexentastor5-nfs-provisioner
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate 
+  template:
+    metadata:
+      labels:
+        app: nexentastor5-nfs-provisioner
+    spec:
+      containers:
+        - name: nexentastor5-nfs-provisioner
+          image: nexentastor5-nfs-provisioner
+          ports:
+            - name: nfs
+              containerPort: 2049
+            - name: mountd
+              containerPort: 20048
+            - name: rpcbind
+              containerPort: 111
+            - name: rpcbind-udp
+              containerPort: 111
+              protocol: UDP
+          securityContext:
+            capabilities:
+              add:
+                - DAC_READ_SEARCH
+          args:
+            - "/nexentastor5-nfs-provisioner"
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: SERVICE_NAME
+              value: nexentastor5-nfs-provisioner
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          imagePullPolicy: "IfNotPresent"
+          volumeMounts:
+            - name: export-volume
+              mountPath: /mnt
+      volumes:
+        - name: export-volume
+          hostPath:
+            path: /mnt
