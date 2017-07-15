@@ -1,65 +1,50 @@
-
-
-```
-make image
-
-kubectl create -f class.yaml
-
-kubectl create -f clusterrole.yaml
-
-kubectl create -f clusterrolebinding.yaml
-
-kubectl create -f serviceaccount.yaml
+Clone this repository
+```console
+git clone https://github.com/Nexenta/k8s-nexentastor5-nfs.git && cd k8s-nexentastor5-nfs
 ```
 
-Create a pool on NexentaStor appliance and pass it to NEXENTA_HOSTPOOL param in pod.yaml.
-Configure all other values in pod.yaml 
+Configure environment variables in deployment.yaml according to your NexentaStor setup.
+Create deployment and storage class.
+```console
+$ kubectl create -f deployment.yaml
+$ kubectl create -f class.yaml
+```
+
+Check if the provisioner pod is running.
+```console
+$ kubectl get po
+nexentastor5-nfs-provisioner-2310907426-jcv44   1/1       Running   0          11m
+```
+
+If the output says `Running` - you are ready to create PVCs and Pods.
+You can use `claim.yaml` and `test-pod.yaml` to verify everything is working.
+```console
+$ kubectl create -f claim.yaml
+$ kubectl create -f test-pod.yaml
 
 ```
-kubectl create -f pod.yaml
-```
 
-You should see:
-
-po/nexenta-stor-provisioner   1/1       Running   0
-
-
-
-Create a claim:
-
-# kubectl create –f claim.yaml
-
-Start a pod mounting the nfs
-
-# kubectl create –f test-pod.yaml
-
-
-
-That’s it! You should see the pod started and mounting the PV:
-
-enikher@k8s-2:~/nexenta$ kubectl exec -it test-pod sh
-
+Log in to the pod and verify that test file was created:
+```console
+$ kubectl exec -it test-pod sh
+$ ls /mnt
+SUCCESS
 / # df -h
-
 Filesystem                Size      Used Available Use% Mounted on
-none                     86.0G     13.1G     68.6G  16% /
-tmpfs                     5.9G         0      5.9G   0% /dev
-tmpfs                     5.9G         0      5.9G   0% /sys/fs/cgroup
-192.168.122.218:/nfs/pvc-fc321091-4794-11e7-89b4-5254006bdf84
-                          1.0M         0      1.0M   0% /mnt
-/dev/mapper/ubuntu--golden--vg-root
-                         86.0G     13.1G     68.6G  16% /dev/termination-log
-/dev/mapper/ubuntu--golden--vg-root
-                         86.0G     13.1G     68.6G  16% /etc/resolv.conf
-/dev/mapper/ubuntu--golden--vg-root
-                         86.0G     13.1G     68.6G  16% /etc/hostname
-/dev/mapper/ubuntu--golden--vg-root
-                         86.0G     13.1G     68.6G  16% /etc/hosts
+overlay                 165.2G     13.7G    143.1G   9% /
+tmpfs                    15.7G         0     15.7G   0% /dev
+tmpfs                    15.7G         0     15.7G   0% /sys/fs/cgroup
+10.3.1.1:/data1/kubernetes/pvc-eea600b1-68f1-11e7-90d2-12430bf7c5c9
+                        951.5G         0    951.5G   0% /mnt
+/dev/sda1               165.2G     13.7G    143.1G   9% /dev/termination-log
+/dev/sda1               165.2G     13.7G    143.1G   9% /etc/resolv.conf
+/dev/sda1               165.2G     13.7G    143.1G   9% /etc/hostname
+/dev/sda1               165.2G     13.7G    143.1G   9% /etc/hosts
 shm                      64.0M         0     64.0M   0% /dev/shm
-tmpfs                     5.9G     12.0K      5.9G   0% /var/run/secrets/kubernetes.io/serviceaccount
-tmpfs                     5.9G         0      5.9G   0% /proc/kcore
-tmpfs                     5.9G         0      5.9G   0% /proc/timer_list
-tmpfs                     5.9G         0      5.9G   0% /proc/timer_stats
-tmpfs                     5.9G         0      5.9G   0% /proc/sched_debug
-tmpfs                     5.9G         0      5.9G   0% /sys/firmware
-/ #
+tmpfs                    15.7G     12.0K     15.7G   0% /var/run/secrets/kubernetes.io/serviceaccount
+tmpfs                    15.7G         0     15.7G   0% /proc/kcore
+tmpfs                    15.7G         0     15.7G   0% /proc/timer_list
+tmpfs                    15.7G         0     15.7G   0% /proc/timer_stats
+tmpfs                    15.7G         0     15.7G   0% /proc/sched_debug
+
+```

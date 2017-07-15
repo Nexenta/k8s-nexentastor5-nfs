@@ -23,10 +23,10 @@ import (
     "fmt"
     "flag"
     "encoding/json"
+    "github.com/golang/glog"
     "io/ioutil"
     "net/http"
     "net/url"
-    log "github.com/Sirupsen/logrus"
     "github.com/kubernetes-incubator/external-storage/lib/controller"
     "k8s.io/client-go/pkg/api/v1"
     metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -73,27 +73,27 @@ type Auth struct {
 func NewNexentaStorProvisioner() controller.Provisioner {
     nodeName := os.Getenv("NODE_NAME")
     if nodeName == "" {
-        log.Fatal("env variable NODE_NAME must be set so that this provisioner can identify itself")
+        glog.Fatal("env variable NODE_NAME must be set so that this provisioner can identify itself")
     }
     hostname := os.Getenv("NEXENTA_HOSTNAME")
     if hostname == "" {
-        log.Fatal("env variable NEXENTA_HOSTNAME must be set to communicate with via Rest API")
+        glog.Fatal("env variable NEXENTA_HOSTNAME must be set to communicate with via Rest API")
     }
     port := os.Getenv("NEXENTA_HOSTPORT")
     if port == "" {
-        log.Fatal("env variable NEXENTA_HOSTPORT must be set to communicate with via Rest API")
+        glog.Fatal("env variable NEXENTA_HOSTPORT must be set to communicate with via Rest API")
     }
     pool := os.Getenv("NEXENTA_HOSTPOOL")
     if pool == "" {
-        log.Fatal("env variable NEXENTA_HOSTPOOL must be set")
+        glog.Fatal("env variable NEXENTA_HOSTPOOL must be set")
     }
     username := os.Getenv("NEXENTA_USERNAME")
     if username == "" {
-        log.Fatal("env variable NEXENTA_USERNAME must be set")
+        glog.Fatal("env variable NEXENTA_USERNAME must be set")
     }
     password := os.Getenv("NEXENTA_PASSWORD")
     if password == "" {
-        log.Fatal("env variable NEXENTA_PASSWORD must be set")
+        glog.Fatal("env variable NEXENTA_PASSWORD must be set")
     }
     parentFS := os.Getenv("PARENT_FILESYSTEM")
     if parentFS == "" {
@@ -108,7 +108,7 @@ func NewNexentaStorProvisioner() controller.Provisioner {
         ParentFS: parentFS,
         Path:     filepath.Join(pool, parentFS),
         Auth:     auth,
-        Endpoint: fmt.Sprintf("https://%s:%d/", hostname, port),
+        Endpoint: fmt.Sprintf("https://%s:%s/", hostname, port),
     }
 }
 
@@ -117,7 +117,6 @@ func (p *NexentaStorProvisioner) Initialize() {
         "path": filepath.Join(p.Path, p.ParentFS),
     }
     p.Request("POST", "storage/filesystems", data)
-
 }
 
 type FileSystem struct {
@@ -132,7 +131,7 @@ type NFS struct {
 
 // Provision creates a storage asset and returns a PV object representing it.
 func (p *NexentaStorProvisioner) Provision(options controller.VolumeOptions) (pv *v1.PersistentVolume, err error) {
-    log.Debug("Creating volume %s", options.PVName)
+    glog.Infof("Creating volume %s", options.PVName)
     data := map[string]interface{} {
         "path": filepath.Join(p.Path, options.PVName),
     }
@@ -147,7 +146,7 @@ func (p *NexentaStorProvisioner) Provision(options controller.VolumeOptions) (pv
     r := make(map[string]interface{})
     jsonerr := json.Unmarshal(resp, &r)
     if (jsonerr != nil) {
-        log.Fatal(jsonerr)
+        glog.Fatal(jsonerr)
     }
     pv = &v1.PersistentVolume{
         ObjectMeta: metav1.ObjectMeta{
@@ -177,54 +176,25 @@ func (p *NexentaStorProvisioner) Provision(options controller.VolumeOptions) (pv
 // Delete removes the storage asset that was created by Provision represented
 // by the given PV.
 func (p *NexentaStorProvisioner) Delete(volume *v1.PersistentVolume) error {
-    name := volume.ObjectMeta.Name
-    log.Debug("Deleting Volume ", name)
-    vname, err := p.GetVolume(name)
-    if vname == "" {
-        log.Error("Volume %s does not exist.", name)
-        return err
-    }
-    path := filepath.Join(p.Path, name) 
+    path := volume.Spec.PersistentVolumeSource.NFS.Path[1:]
+    glog.Info("Deleting Volume ", path)
     body, err := p.Request("DELETE",  filepath.Join("storage/filesystems/", url.QueryEscape(path)), nil)
     if strings.Contains(string(body), "ENOENT") {
-        log.Debug("Error trying to delete volume ", name, " :", string(body))
+        glog.Info("Error trying to delete volume ", path, " :", err)
     }
     return nil
 }
 
-func (p *NexentaStorProvisioner) GetVolume(name string) (vname string, err error) {
-    log.Debug("GetVolume ", name)
-    url := fmt.Sprintf("/storage/filesystems?path=%s", filepath.Join(p.Path, name))
-    body, err := p.Request("GET", url, nil)
-    r := make(map[string][]map[string]interface{})
-    jsonerr := json.Unmarshal(body, &r)
-    if (jsonerr != nil) {
-        log.Error(jsonerr)
-    }
-    if len(r["data"]) < 1 {
-        err = fmt.Errorf("Failed to find any volumes with name: %s.", name)
-        return vname, err
-    } else {
-        log.Info(r["data"])
-        if v,ok := r["data"][0]["path"].(string); ok {
-            vname = strings.Split(v, fmt.Sprintf("%s/", p.Path))[1]
-            } else {
-                return "", fmt.Errorf("Path is not of type string")
-        }
-    }
-    return vname, err
-}
-
 func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[string]interface{}) (body []byte, err error) {
-    log.Debug("Issue request to Nexenta, endpoint: ", endpoint, " data: ", data, " method: ", method)
+    glog.Info("Issue request to Nexenta, endpoint: ", endpoint, " data: ", data, " method: ", method)
     if p.Endpoint == "" {
-        log.Error("Endpoint is not set, unable to issue requests")
+        glog.Error("Endpoint is not set, unable to issue requests")
         err = errors.New("Unable to issue json-rpc requests without specifying Endpoint")
         return nil, err
     }
     datajson, err := json.Marshal(data)
     if (err != nil) {
-        log.Error(err)
+        glog.Error(err)
     }
     tr := &http.Transport{
         TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -235,13 +205,16 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
     if len(data) != 0 {
         req, err = http.NewRequest(method, url, strings.NewReader(string(datajson)))
     }
+    if (err != nil) {
+        glog.Error(err)
+    }
     req.Header.Set("Content-Type", "application/json")
     resp, err := client.Do(req)
-    log.Debug("No auth: ", resp.StatusCode, resp.Body)
+    glog.Info("No auth: ", resp.StatusCode, resp.Body)
     if resp.StatusCode == 401 || resp.StatusCode == 403 {
         auth, err := p.https_auth()
         if err != nil {
-            log.Error("Error while trying to https login: %s", err)
+            glog.Error("Error while trying to https login: %s", err)
             return nil, err
         }
         req, err = http.NewRequest(method, url, nil)
@@ -251,18 +224,18 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
         req.Header.Set("Content-Type", "application/json")
         req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", auth))
         resp, err = client.Do(req)
-        log.Debug("With auth: ", resp.StatusCode, resp.Body)
+        glog.Info("With auth: ", resp.StatusCode, resp.Body)
     }
 
     if err != nil {
-        log.Error("Error while handling request %s", err)
+        glog.Error("Error while handling request %s", err)
         return nil, err
     }
     p.checkError(resp)
     defer resp.Body.Close()
     body, err = ioutil.ReadAll(resp.Body)
     if (err != nil) {
-        log.Error(err)
+        glog.Error(err)
     }
     if (resp.StatusCode == 202) {
         body, err = p.resend202(body)
@@ -284,17 +257,17 @@ func (p *NexentaStorProvisioner) https_auth() (token string, err error){
     client := &http.Client{Transport: tr}
     req.Header.Set("Content-Type", "application/json")
     resp, err := client.Do(req)
-    log.Debug(resp.StatusCode, resp.Body)
+    glog.Info(resp.StatusCode, resp.Body)
 
     if err != nil {
-        log.Error("Error while handling request: %s", err)
+        glog.Error("Error while handling request: %s", err)
         return "", err
     }
     p.checkError(resp)
     defer resp.Body.Close()
     body, err := ioutil.ReadAll(resp.Body)
     if (err != nil) {
-        log.Error(err)
+        glog.Error(err)
     }
     r := make(map[string]interface{})
     err = json.Unmarshal(body, &r)
@@ -355,18 +328,18 @@ func main() {
     // to use to communicate with Kubernetes
     config, err := rest.InClusterConfig()
     if err != nil {
-        log.Fatalf("Failed to create config: %v", err)
+        glog.Fatalf("Failed to create config: %v", err)
     }
     clientset, err := kubernetes.NewForConfig(config)
     if err != nil {
-        log.Fatalf("Failed to create client: %v", err)
+        glog.Fatalf("Failed to create client: %v", err)
     }
 
     // The controller needs to know what the server version is because out-of-tree
     // provisioners aren't officially supported until 1.5
     serverVersion, err := clientset.Discovery().ServerVersion()
     if err != nil {
-        log.Fatalf("Error getting server version: %v", err)
+        glog.Fatalf("Error getting server version: %v", err)
     }
 
     // Create the provisioner: it implements the Provisioner interface expected by
@@ -375,6 +348,6 @@ func main() {
 
     // Start the provision controller which will dynamically provision nexentaStor
     // PVs
-    pc := controller.NewProvisionController(clientset, resyncPeriod, provisionerName, nexentaStorProvisioner, serverVersion.GitVersion, exponentialBackOffOnError, failedRetryThreshold, leasePeriod, renewDeadline, retryPeriod, termLimit)
+    pc := controller.NewProvisionController(clientset, provisionerName, nexentaStorProvisioner, serverVersion.GitVersion)
     pc.Run(wait.NeverStop)
 }
