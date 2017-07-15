@@ -1,6 +1,6 @@
 Clone this repository
 ```console
-git clone https://github.com/Nexenta/k8s-nexentastor5-nfs.git && cd k8s-nexentastor5-nfs
+$ git clone https://github.com/Nexenta/k8s-nexentastor5-nfs.git && cd k8s-nexentastor5-nfs
 ```
 
 Configure environment variables in deployment.yaml according to your NexentaStor setup.
@@ -29,7 +29,8 @@ Log in to the pod and verify that test file was created:
 $ kubectl exec -it test-pod sh
 $ ls /mnt
 SUCCESS
-/ # df -h
+
+$ df -h
 Filesystem                Size      Used Available Use% Mounted on
 overlay                 165.2G     13.7G    143.1G   9% /
 tmpfs                    15.7G         0     15.7G   0% /dev
