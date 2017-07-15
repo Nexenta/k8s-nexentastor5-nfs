@@ -100,7 +100,7 @@ func NewNexentaStorProvisioner() controller.Provisioner {
         parentFS = defaultParentFilesystem
     }
     auth := Auth{Username: username, Password: password}
-    return &NexentaStorProvisioner{
+    p:= &NexentaStorProvisioner{
         Identity: nodeName,
         Hostname: hostname,
         Port:     port,
@@ -110,11 +110,13 @@ func NewNexentaStorProvisioner() controller.Provisioner {
         Auth:     auth,
         Endpoint: fmt.Sprintf("https://%s:%s/", hostname, port),
     }
+    p.Initialize()
+    return p
 }
 
 func (p *NexentaStorProvisioner) Initialize() {
     data := map[string]interface{} {
-        "path": filepath.Join(p.Path, p.ParentFS),
+        "path": filepath.Join(p.Path),
     }
     p.Request("POST", "storage/filesystems", data)
 }
