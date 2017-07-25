@@ -13,7 +13,9 @@
 # limitations under the License.
 
 
-IMAGE?=quay.io/alexey_khodos/nexentastor5-nfs-provisioner
+$(eval BRANCH=$(shell git rev-parse --abbrev-ref HEAD))
+TAG=$(BRANCH)
+IMAGE=quay.io/alexey_khodos/nexentastor5-nfs-provisioner
 
 
 all: clean image clean
@@ -21,7 +23,7 @@ all: clean image clean
 
 .PHONY: image
 image: nexentastor5-nfs-provisioner
-	@docker build -t $(IMAGE) -f Dockerfile .
+	@docker build -t $(IMAGE):$(TAG) -f Dockerfile .
 
 .PHONY: nexentastor5-nfs-provisioner
 nexentastor5-nfs-provisioner:
@@ -40,3 +42,8 @@ clean:
 	@rm -rf bin
 	@docker rm -vf tmp || true
 	@docker rmi builder || true
+
+.PHONY: push
+push:
+	@echo "### push ${IMAGE}:${TAG}"
+	@docker push ${IMAGE}:${TAG}

@@ -83,9 +83,9 @@ func NewNexentaStorProvisioner() controller.Provisioner {
     if port == "" {
         glog.Fatal("env variable NEXENTA_HOSTPORT must be set to communicate with NexentaStor")
     }
-    pool := os.Getenv("NEXENTA_HOSTPOOL")
+    pool := os.Getenv("NEXENTA_POOL")
     if pool == "" {
-        glog.Fatal("env variable NEXENTA_HOSTPOOL must be set")
+        glog.Fatal("env variable NEXENTA_POOL must be set")
     }
     username := os.Getenv("NEXENTA_USERNAME")
     if username == "" {
@@ -95,7 +95,7 @@ func NewNexentaStorProvisioner() controller.Provisioner {
     if password == "" {
         glog.Fatal("env variable NEXENTA_PASSWORD must be set")
     }
-    parentFS := os.Getenv("PARENT_FILESYSTEM")
+    parentFS := os.Getenv("NEXENTA_PARENT_FILESYSTEM")
     if parentFS == "" {
         parentFS = defaultParentFilesystem
     }
