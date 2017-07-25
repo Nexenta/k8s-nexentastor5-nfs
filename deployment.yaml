@@ -29,11 +29,9 @@ spec:
               value: "admin"
             - name: NEXENTA_HOSTPOOL
               value: QA
+            - name: PARENT_FILESYSTEM
+              value: "kubernetes"
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-      volumes:
-        - name: src
-          hostPath:
-            path: "/mnt"

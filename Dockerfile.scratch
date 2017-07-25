@@ -1,3 +1,0 @@
-FROM ubuntu
-COPY nexentastor5-nfs-provisioner /
-CMD ["/nexentastor5-nfs-provisioner"]

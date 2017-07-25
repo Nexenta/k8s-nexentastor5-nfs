@@ -77,11 +77,11 @@ func NewNexentaStorProvisioner() controller.Provisioner {
     }
     hostname := os.Getenv("NEXENTA_HOSTNAME")
     if hostname == "" {
-        glog.Fatal("env variable NEXENTA_HOSTNAME must be set to communicate with via Rest API")
+        glog.Fatal("env variable NEXENTA_HOSTNAME must be set to communicate with NexentaStor")
     }
     port := os.Getenv("NEXENTA_HOSTPORT")
     if port == "" {
-        glog.Fatal("env variable NEXENTA_HOSTPORT must be set to communicate with via Rest API")
+        glog.Fatal("env variable NEXENTA_HOSTPORT must be set to communicate with NexentaStor")
     }
     pool := os.Getenv("NEXENTA_HOSTPOOL")
     if pool == "" {

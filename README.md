@@ -48,3 +48,11 @@ tmpfs                    15.7G         0     15.7G   0% /proc/timer_stats
 tmpfs                    15.7G         0     15.7G   0% /proc/sched_debug
 
 ```
+
+# Building the image.
+Build the image from code ONLY when you have reasons for it.
+Otherwise ignore this part and use the image from quay.io repository.
+```console
+git clone https://github.com/Nexenta/k8s-nexentastor5-nfs.git && cd k8s-nexentastor5-nfs
+make
+```

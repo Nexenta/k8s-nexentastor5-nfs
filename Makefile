@@ -12,16 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.PHONY: image
 
 IMAGE?=quay.io/alexey_khodos/nexentastor5-nfs-provisioner
 
-image: nexentastor5-nfs-provisioner
-	docker build -t $(IMAGE) -f Dockerfile.scratch .
 
-nexentastor5-nfs-provisioner: 
-	go build nexentastor5-nfs-provisioner.go
+all: clean image clean
+
+
+.PHONY: image
+image: nexentastor5-nfs-provisioner
+	@docker build -t $(IMAGE) -f Dockerfile .
+
+.PHONY: nexentastor5-nfs-provisioner
+nexentastor5-nfs-provisioner:
+	@echo "### docker build: builder image"
+	@docker build -q -t builder -f Dockerfile.dev .
+	@echo "### extract binary"
+	@docker create --name tmp builder
+	@docker start -i tmp
+	@mkdir -p bin
+	@docker cp tmp:/go/bin/nexentastor5-nfs-provisioner bin/
+	@docker rm -vf tmp || true
+	@docker rmi builder || true
 
 .PHONY: clean
 clean:
-	rm nexentastor5-nfs-provisioner
+	@rm -rf bin
+	@docker rm -vf tmp || true
+	@docker rmi builder || true
