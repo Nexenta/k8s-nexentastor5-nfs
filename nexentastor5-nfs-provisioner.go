@@ -167,8 +167,8 @@ func (p *NexentaStorProvisioner) Provision(options controller.VolumeOptions) (pv
             }
         }
     }
-    data["compression"] = compression
-    data["ratelimit"] = ratelimit
+    data["compressionMode "] = compression
+    data["rateLimit"] = ratelimit
     p.Request("POST", "storage/filesystems", data)
 
     data = make(map[string]interface{})
