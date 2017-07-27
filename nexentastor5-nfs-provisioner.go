@@ -119,7 +119,7 @@ func (p *NexentaStorProvisioner) Initialize() {
         "path": filepath.Join(p.Path),
     }
     _, err:= p.Request("POST", "storage/filesystems", data)
-    if (jsonerr != nil) {
+    if (err != nil) {
         glog.Fatal("Failed to Initialize NexentaStor NFS plugin.")
     }
 }
@@ -135,7 +135,7 @@ func (p *NexentaStorProvisioner) Provision(options controller.VolumeOptions) (pv
     data = make(map[string]interface{})
     data["anon"] = "root"
     data["filesystem"] = filepath.Join(p.Path, options.PVName)
-    glog.Infof("Options: ", options)
+    glog.Infof("Options: %s", options)
     // data["quotaSize"] = options.Size
     p.Request("POST", "nas/nfs", data)
     url := "storage/filesystems/" + p.Pool + "%2F" + p.ParentFS + "%2F" + options.PVName
@@ -207,7 +207,7 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
     }
     req.Header.Set("Content-Type", "application/json")
     resp, err := client.Do(req)
-    if resp == "" {
+    if resp.Status == "" {
         err = errors.New("Empty response from NexentaStor, check appliance availability.")
         glog.Fatal(err)
         return
