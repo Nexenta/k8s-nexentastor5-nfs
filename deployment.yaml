@@ -1,7 +1,7 @@
 kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
-  name: nexentastor5-nfs-provisioner
+  name: nexentastor5-nfs-provisioner-wip
 spec:
   replicas: 1
   strategy:
@@ -9,15 +9,12 @@ spec:
   template:
     metadata:
       labels:
-        app: nexentastor5-nfs-provisioner
+        app: nexentastor5-nfs-provisioner-wip
     spec:
       containers:
-        - name: nexentastor5-nfs-provisioner
-          image:  quay.io/alexey_khodos/nexentastor5-nfs-provisioner
+        - name: nexentastor5-nfs-provisioner-wip
+          image:  quay.io/alexey_khodos/nexentastor5-nfs-provisioner:wip
           imagePullPolicy: "IfNotPresent"
-          volumeMounts:
-            - name: src
-              mountPath: /mnt
           env:
             - name: NEXENTA_HOSTNAME
               value: 10.3.199.29

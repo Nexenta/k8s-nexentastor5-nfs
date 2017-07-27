@@ -39,7 +39,7 @@ nexentastor5-nfs-provisioner:
 
 .PHONY: clean
 clean:
-	@rm -rf bin
+	@rm -rf bin nexentastor5-nfs-provisioner
 	@docker rm -vf tmp || true
 	@docker rmi builder || true
 

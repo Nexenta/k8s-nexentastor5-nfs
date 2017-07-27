@@ -118,17 +118,10 @@ func (p *NexentaStorProvisioner) Initialize() {
     data := map[string]interface{} {
         "path": filepath.Join(p.Path),
     }
-    p.Request("POST", "storage/filesystems", data)
-}
-
-type FileSystem struct {
-    Path      string `json:"path"`
-    QuotaSize int64  `json:"quotaSize"`
-}
-
-type NFS struct {
-    FileSystem string `json:"filesystem"`
-    Anon       string `json:"anon"`
+    _, err:= p.Request("POST", "storage/filesystems", data)
+    if (jsonerr != nil) {
+        glog.Fatal("Failed to Initialize NexentaStor NFS plugin.")
+    }
 }
 
 // Provision creates a storage asset and returns a PV object representing it.
@@ -142,6 +135,8 @@ func (p *NexentaStorProvisioner) Provision(options controller.VolumeOptions) (pv
     data = make(map[string]interface{})
     data["anon"] = "root"
     data["filesystem"] = filepath.Join(p.Path, options.PVName)
+    glog.Infof("Options: ", options)
+    // data["quotaSize"] = options.Size
     p.Request("POST", "nas/nfs", data)
     url := "storage/filesystems/" + p.Pool + "%2F" + p.ParentFS + "%2F" + options.PVName
     resp, err := p.Request("GET", url, nil)
@@ -212,6 +207,11 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
     }
     req.Header.Set("Content-Type", "application/json")
     resp, err := client.Do(req)
+    if resp == "" {
+        err = errors.New("Empty response from NexentaStor, check appliance availability.")
+        glog.Fatal(err)
+        return
+    }
     glog.Info("No auth: ", resp.StatusCode, resp.Body)
     if resp.StatusCode == 401 || resp.StatusCode == 403 {
         auth, err := p.https_auth()
