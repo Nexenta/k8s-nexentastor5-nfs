@@ -137,7 +137,7 @@ func (p *NexentaStorProvisioner) parseOptions(options controller.VolumeOptions) 
             if err != nil {
                 return "", 0, false, fmt.Errorf("Invalid value for ratelimit: %v. Must be an integer", v)
             }
-        case "thin":
+        case "thin_provisioning":
             thin_provisioning, err = strconv.ParseBool(strings.ToLower(v))
             if err != nil {
                 return "", 0, false, fmt.Errorf("Invalid value for thin_provisioning: %v. Valid are 'true' or 'false'", v)
