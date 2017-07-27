@@ -23,7 +23,7 @@ all: clean image clean
 
 .PHONY: image
 image: nexentastor5-nfs-provisioner
-	@docker build --build-arg BRANCH=$(BRANCH) -t $(IMAGE):$(TAG) -f Dockerfile .
+	@docker build -t $(IMAGE):$(TAG) -f Dockerfile .
 
 .PHONY: nexentastor5-nfs-provisioner
 nexentastor5-nfs-provisioner:

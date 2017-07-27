@@ -36,6 +36,7 @@ import (
     "os"
     "path/filepath"
     "strings"
+    "strconv"
     "syscall"
 )
 
@@ -53,8 +54,6 @@ const (
 )
 
 type NexentaStorProvisioner struct {
-    // Identity of this NexentaStorProvisioner, set to node's name. Used to identify
-    // "this" provisioner's PVs.
     Identity string
     Hostname string
     Port     string
@@ -63,6 +62,7 @@ type NexentaStorProvisioner struct {
     ParentFS string
     Endpoint string
     Auth     Auth
+    IgnoreSSL bool
 }
 
 type Auth struct {
@@ -99,6 +99,7 @@ func NewNexentaStorProvisioner() controller.Provisioner {
     if parentFS == "" {
         parentFS = defaultParentFilesystem
     }
+    ignoreSSL, _ := strconv.ParseBool(strings.ToLower(os.Getenv("IGNORE_SSL_CERTIFICATES")))
     auth := Auth{Username: username, Password: password}
     p:= &NexentaStorProvisioner{
         Identity: nodeName,
@@ -108,6 +109,7 @@ func NewNexentaStorProvisioner() controller.Provisioner {
         ParentFS: parentFS,
         Path:     filepath.Join(pool, parentFS),
         Auth:     auth,
+        IgnoreSSL: ignoreSSL,
         Endpoint: fmt.Sprintf("https://%s:%s/", hostname, port),
     }
     p.Initialize()
@@ -124,19 +126,54 @@ func (p *NexentaStorProvisioner) Initialize() {
     }
 }
 
+func (p *NexentaStorProvisioner) parseOptions(options controller.VolumeOptions) (
+    compression string, ratelimit int, thin_provisioning bool, err error) {
+    for k, v := range options.Parameters {
+        switch strings.ToLower(k) {
+        case "compression":
+            compression = strings.ToLower(v)
+        case "ratelimit":
+            ratelimit, err = strconv.Atoi(strings.ToLower(v))
+            if err != nil {
+                return "", 0, false, fmt.Errorf("Invalid value for ratelimit: %v. Must be an integer", v)
+            }
+        case "thin":
+            thin_provisioning, err = strconv.ParseBool(strings.ToLower(v))
+            if err != nil {
+                return "", 0, false, fmt.Errorf("Invalid value for thin_provisioning: %v. Valid are 'true' or 'false'", v)
+            }
+        default:
+            return "", 0, false, fmt.Errorf("invalid parameter: %q", k)
+        }
+    }
+    return
+}
+
 // Provision creates a storage asset and returns a PV object representing it.
 func (p *NexentaStorProvisioner) Provision(options controller.VolumeOptions) (pv *v1.PersistentVolume, err error) {
     glog.Infof("Creating volume %s", options.PVName)
+    compression, ratelimit, thin_provisioning, err := p.parseOptions(options)
+    if err != nil {
+        return pv, fmt.Errorf("error validating options for volume: %v", err)
+    }
     data := map[string]interface{} {
         "path": filepath.Join(p.Path, options.PVName),
     }
+    if storage_request, ok := options.PVC.Spec.Resources.Requests[v1.ResourceName(v1.ResourceStorage)]; ok {
+        if size, ok := storage_request.AsInt64(); ok {
+            data["quotaSize"] = size
+            if !thin_provisioning {
+                data["reservationSize"] = size
+            }
+        }
+    }
+    data["compression"] = compression
+    data["ratelimit"] = ratelimit
     p.Request("POST", "storage/filesystems", data)
 
     data = make(map[string]interface{})
     data["anon"] = "root"
     data["filesystem"] = filepath.Join(p.Path, options.PVName)
-    glog.Infof("Options: %s", options)
-    // data["quotaSize"] = options.Size
     p.Request("POST", "nas/nfs", data)
     url := "storage/filesystems/" + p.Pool + "%2F" + p.ParentFS + "%2F" + options.PVName
     resp, err := p.Request("GET", url, nil)
@@ -194,7 +231,7 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
         glog.Error(err)
     }
     tr := &http.Transport{
-        TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+        TLSClientConfig: &tls.Config{InsecureSkipVerify: p.IgnoreSSL},
     }
     client := &http.Client{Transport: tr}
     url := p.Endpoint + endpoint

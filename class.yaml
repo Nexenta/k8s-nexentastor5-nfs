@@ -3,3 +3,8 @@ apiVersion: storage.k8s.io/v1beta1
 metadata:
   name: nexentastor5-nfs
 provisioner: nexenta.com/k8s-nexentastor5-nfs
+parameters:
+  compression: "on"
+  ratelimit: 1500
+  ignore_ssl_certificate: "true"
+  thin_provisioning: true
