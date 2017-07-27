@@ -29,7 +29,7 @@ spec:
             - name: NEXENTA_PARENT_FILESYSTEM
               value: "kubernetes"
             - name: IGNORE_SSL_CERTIFICATES
-              value: true
+              value: "true"
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
