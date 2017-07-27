@@ -249,7 +249,9 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
         glog.Fatal(err)
         return
     }
-    glog.Info("No auth: ", resp.StatusCode, ioutil.ReadAll(resp.Body))
+    body, _ = ioutil.ReadAll(resp.Body)
+
+    glog.Info("No auth: ", resp.StatusCode, body)
     if resp.StatusCode == 401 || resp.StatusCode == 403 {
         auth, err := p.https_auth()
         if err != nil {
@@ -263,7 +265,9 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
         req.Header.Set("Content-Type", "application/json")
         req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", auth))
         resp, err = client.Do(req)
-        glog.Info("With auth: ", resp.StatusCode, ioutil.ReadAll(resp.Body))
+        body, _ = ioutil.ReadAll(resp.Body)
+
+        glog.Info("With auth: ", resp.StatusCode, body)
     }
 
     if err != nil {
@@ -296,7 +300,9 @@ func (p *NexentaStorProvisioner) https_auth() (token string, err error){
     client := &http.Client{Transport: tr}
     req.Header.Set("Content-Type", "application/json")
     resp, err := client.Do(req)
-    glog.Info(resp.StatusCode, ioutil.ReadAll(resp.Body))
+    body, _ := ioutil.ReadAll(resp.Body)
+
+    glog.Info(resp.StatusCode, body)
 
     if err != nil {
         glog.Error("Error while handling request: %s", err)
@@ -304,7 +310,7 @@ func (p *NexentaStorProvisioner) https_auth() (token string, err error){
     }
     p.checkError(resp)
     defer resp.Body.Close()
-    body, err := ioutil.ReadAll(resp.Body)
+    body, err = ioutil.ReadAll(resp.Body)
     if (err != nil) {
         glog.Error(err)
     }
