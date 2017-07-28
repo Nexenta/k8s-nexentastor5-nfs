@@ -249,7 +249,17 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
         glog.Fatal(err)
         return
     }
-    body, _ = ioutil.ReadAll(resp.Body)
+    body, readErr := ioutil.ReadAll(resp.Body)
+    if readErr != nil {
+        glog.Errorf("Error while handling request %s", readErr)
+        return nil, readErr
+    }
+    msg := make(map[string]interface{})
+    err = json.Unmarshal(body, &msg)
+    if err!= nil {
+        glog.Errorf("Error while trying to unmarshal json: %s", err)
+        return
+    }
 
     glog.Info("No auth: ", resp.StatusCode, body)
     if resp.StatusCode == 401 || resp.StatusCode == 403 {
@@ -265,7 +275,16 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
         req.Header.Set("Content-Type", "application/json")
         req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", auth))
         resp, err = client.Do(req)
-        body, _ = ioutil.ReadAll(resp.Body)
+        body, readErr = ioutil.ReadAll(resp.Body)
+        if readErr != nil {
+            glog.Errorf("Error while handling request %s", readErr)
+            return nil, readErr
+        }
+        msg := make(map[string]interface{})
+        err = json.Unmarshal(body, &msg)
+        if err != nil {
+            glog.Errorf("Error while trying to unmarshal json: %s", err)
+        }
 
         glog.Info("With auth: ", resp.StatusCode, body)
     }
@@ -300,7 +319,17 @@ func (p *NexentaStorProvisioner) https_auth() (token string, err error){
     client := &http.Client{Transport: tr}
     req.Header.Set("Content-Type", "application/json")
     resp, err := client.Do(req)
-    body, _ := ioutil.ReadAll(resp.Body)
+    body, readErr := ioutil.ReadAll(resp.Body)
+    if readErr != nil {
+        glog.Errorf("Error while handling request %s", readErr)
+        return "", readErr
+    }
+    msg := make(map[string]interface{})
+    err = json.Unmarshal(body, &msg)
+    if err!= nil {
+        glog.Errorf("Error while trying to unmarshal json: %s", err)
+        return
+    }
 
     glog.Info(resp.StatusCode, body)
 
