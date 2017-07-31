@@ -4,6 +4,14 @@ Clone this repository
 git clone https://github.com/Nexenta/k8s-nexentastor5-nfs.git && cd k8s-nexentastor5-nfs
 ```
 
+## RBAC
+```console
+$ kubectl create -f serviceaccount.yaml
+$ kubectl create -f clusterrole.yaml
+$ kubectl create -f clusterrolebinding.yaml
+$ kubectl patch deployment nexentastor5-nfs-provisioner -p '{"spec":{"template":{"spec":{"serviceAccount":"nexentastor5-provisioner"}}}}'
+```
+
 Configure environment variables in deployment.yaml according to your NexentaStor setup.
 Create deployment and storage class.
 ```console
