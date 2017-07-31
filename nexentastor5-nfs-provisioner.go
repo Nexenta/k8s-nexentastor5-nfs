@@ -254,14 +254,14 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
         glog.Errorf("Error while handling request %s", readErr)
         return nil, readErr
     }
-    msg := make(map[string]interface{})
+    var msg interface{}
     err = json.Unmarshal(body, &msg)
     if err!= nil {
         glog.Errorf("Error while trying to unmarshal json: %s", err)
         return
     }
+    glog.Info("Got response: ", resp.StatusCode, msg)
 
-    glog.Info("No auth: ", resp.StatusCode, body)
     if resp.StatusCode == 401 || resp.StatusCode == 403 {
         auth, err := p.https_auth()
         if err != nil {
@@ -280,13 +280,12 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
             glog.Errorf("Error while handling request %s", readErr)
             return nil, readErr
         }
-        msg := make(map[string]interface{})
         err = json.Unmarshal(body, &msg)
         if err != nil {
             glog.Errorf("Error while trying to unmarshal json: %s", err)
         }
 
-        glog.Info("With auth: ", resp.StatusCode, body)
+        glog.Info("With auth: ", resp.StatusCode, msg)
     }
 
     if err != nil {
@@ -324,14 +323,14 @@ func (p *NexentaStorProvisioner) https_auth() (token string, err error){
         glog.Errorf("Error while handling request %s", readErr)
         return "", readErr
     }
-    msg := make(map[string]interface{})
+    var msg interface{}
     err = json.Unmarshal(body, &msg)
     if err!= nil {
         glog.Errorf("Error while trying to unmarshal json: %s", err)
         return
     }
 
-    glog.Info(resp.StatusCode, body)
+    glog.Info("Got response: ", resp.StatusCode, msg)
 
     if err != nil {
         glog.Error("Error while handling request: %s", err)

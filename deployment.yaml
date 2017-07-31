@@ -17,7 +17,7 @@ spec:
           imagePullPolicy: "Always"
           env:
             - name: NEXENTA_HOSTNAME
-              value: 10.3.199.29
+              value: "10.3.199.29"
             - name: NEXENTA_HOSTPORT
               value: "8443"
             - name: NEXENTA_PASSWORD
@@ -25,7 +25,7 @@ spec:
             - name: NEXENTA_USERNAME
               value: "admin"
             - name: NEXENTA_POOL
-              value: QA
+              value: "QA"
             - name: NEXENTA_PARENT_FILESYSTEM
               value: "kubernetes"
             - name: IGNORE_SSL_CERTIFICATES
