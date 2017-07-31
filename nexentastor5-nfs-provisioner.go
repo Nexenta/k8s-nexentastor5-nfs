@@ -42,14 +42,7 @@ import (
 
 
 const (
-    resyncPeriod              = 15 * time.Second
     provisionerName           = "nexenta.com/k8s-nexentastor5-nfs"
-    exponentialBackOffOnError = false
-    failedRetryThreshold      = 5
-    leasePeriod               = controller.DefaultLeaseDuration
-    retryPeriod               = controller.DefaultRetryPeriod
-    renewDeadline             = controller.DefaultRenewDeadline
-    termLimit                 = controller.DefaultTermLimit
     defaultParentFilesystem   = "kubernetes"
 )
 
@@ -171,16 +164,17 @@ func (p *NexentaStorProvisioner) Provision(options controller.VolumeOptions) (pv
     data["rateLimit"] = ratelimit
     p.Request("POST", "storage/filesystems", data)
 
-    data = make(map[string]interface{})
-    data["anon"] = "root"
-    data["filesystem"] = filepath.Join(p.Path, options.PVName)
+    data = map[string]interface{} {
+        "anon": "root",
+        "filesystem": filepath.Join(p.Path, options.PVName),
+    }
     p.Request("POST", "nas/nfs", data)
     url := "storage/filesystems/" + p.Pool + "%2F" + p.ParentFS + "%2F" + options.PVName
     resp, err := p.Request("GET", url, nil)
     r := make(map[string]interface{})
-    jsonerr := json.Unmarshal(resp, &r)
-    if (jsonerr != nil) {
-        glog.Fatal(jsonerr)
+    jsonErr := json.Unmarshal(resp, &r)
+    if (jsonErr != nil) {
+        glog.Fatal(jsonErr)
     }
     pv = &v1.PersistentVolume{
         ObjectMeta: metav1.ObjectMeta{
@@ -222,14 +216,14 @@ func (p *NexentaStorProvisioner) Delete(volume *v1.PersistentVolume) error {
 func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[string]interface{}) (body []byte, err error) {
     glog.Info("Issue request to Nexenta, endpoint: ", endpoint, " data: ", data, " method: ", method)
     if p.Endpoint == "" {
-        glog.Error("Endpoint is not set, unable to issue requests")
-        err = errors.New("Unable to issue json-rpc requests without specifying Endpoint")
-        return nil, err
+        glog.Fatal("Endpoint is not set, unable to issue requests to NexentaStor")
     }
-    datajson, err := json.Marshal(data)
-    if (err != nil) {
-        glog.Error(err)
+
+    datajson, jsonErr := json.Marshal(data)
+    if (jsonErr != nil) {
+        glog.Fatal(jsonErr)
     }
+
     tr := &http.Transport{
         TLSClientConfig: &tls.Config{InsecureSkipVerify: p.IgnoreSSL},
     }
@@ -240,14 +234,14 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
         req, err = http.NewRequest(method, url, strings.NewReader(string(datajson)))
     }
     if (err != nil) {
-        glog.Error(err)
+        glog.Fatal(err)
     }
     req.Header.Set("Content-Type", "application/json")
     resp, err := client.Do(req)
+
     if resp.Status == "" {
         err = errors.New("Empty response from NexentaStor, check appliance availability.")
         glog.Fatal(err)
-        return
     }
     defer resp.Body.Close()
     body, readErr := ioutil.ReadAll(resp.Body)
@@ -255,10 +249,13 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
         glog.Errorf("Error while handling request %s", readErr)
         return nil, readErr
     }
+
     var msg interface{}
-    jsonErr := json.Unmarshal(body, &msg)
-    if jsonErr!= nil {
-        glog.Errorf("Error while trying to unmarshal json: %s", jsonErr)
+    if body != nil {
+        jsonErr = json.Unmarshal(body, &msg)
+        if jsonErr!= nil {
+            glog.Errorf("Error while trying to unmarshal json: %s", jsonErr)
+        }
     }
     glog.Info("Got response: ", resp.StatusCode, msg)
 
@@ -280,11 +277,12 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
             glog.Errorf("Error while handling request %s", readErr)
             return nil, readErr
         }
-        jsonErr = json.Unmarshal(body, &msg)
-        if jsonErr != nil {
-            glog.Errorf("Error while trying to unmarshal json: %s", jsonErr)
+        if body != nil {
+            jsonErr = json.Unmarshal(body, &msg)
+            if jsonErr != nil {
+                glog.Errorf("Error while trying to unmarshal json: %s", jsonErr)
+            }
         }
-
         glog.Info("With auth: ", resp.StatusCode, msg)
     }
 
@@ -314,6 +312,11 @@ func (p *NexentaStorProvisioner) https_auth() (token string, err error){
     client := &http.Client{Transport: tr}
     req.Header.Set("Content-Type", "application/json")
     resp, err := client.Do(req)
+    if err != nil {
+        glog.Error("Error while handling request: %s", err)
+        return "", err
+    }
+
     defer resp.Body.Close()
     body, readErr := ioutil.ReadAll(resp.Body)
     if readErr != nil {
@@ -321,23 +324,19 @@ func (p *NexentaStorProvisioner) https_auth() (token string, err error){
         return "", readErr
     }
     var msg interface{}
-    jsonErr := json.Unmarshal(body, &msg)
-    if jsonErr!= nil {
-        glog.Errorf("Error while trying to unmarshal json: %s", jsonErr)
+    if body != nil {
+        jsonErr := json.Unmarshal(body, &msg)
+        if jsonErr!= nil {
+            glog.Errorf("Error while trying to unmarshal json: %s", jsonErr)
+        }
     }
-
     glog.Info("Got response: ", resp.StatusCode, msg)
 
-    if err != nil {
-        glog.Error("Error while handling request: %s", err)
-        return "", err
-    }
     p.checkError(resp)
     r := make(map[string]interface{})
-    jsonErr = json.Unmarshal(body, &r)
+    jsonErr := json.Unmarshal(body, &r)
     if (jsonErr != nil) {
         jsonErr = fmt.Errorf("Error while trying to unmarshal json: %s", jsonErr)
-        // return "", jsonErr
     }
     return r["token"].(string), err
 }
