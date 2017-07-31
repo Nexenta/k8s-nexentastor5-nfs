@@ -122,7 +122,7 @@ func (p *NexentaStorProvisioner) Initialize() {
     }
     _, err:= p.Request("POST", "storage/filesystems", data)
     if (err != nil) {
-        glog.Fatal("Failed to Initialize NexentaStor NFS plugin.")
+        glog.Fatal("Failed to Initialize NexentaStor NFS plugin.", err)
     }
 }
 
@@ -304,6 +304,7 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
 }
 
 func (p *NexentaStorProvisioner) https_auth() (token string, err error){
+    glog.Info("Sending auth request to Nexenta")
     data := map[string]string {
         "username": p.Auth.Username,
         "password": p.Auth.Password,
