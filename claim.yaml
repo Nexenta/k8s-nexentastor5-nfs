@@ -1,7 +1,7 @@
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: nexentastor5-nfs
+  name: nexentastor5-nfs-wip
   annotations:
     volume.beta.kubernetes.io/storage-class: "nexentastor5-nfs"
 spec:

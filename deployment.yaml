@@ -1,7 +1,7 @@
 kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
-  name: nexentastor5-nfs-provisioner
+  name: nexentastor5-nfs-provisioner-wip
 spec:
   replicas: 1
   strategy:
@@ -9,18 +9,15 @@ spec:
   template:
     metadata:
       labels:
-        app: nexentastor5-nfs-provisioner
+        app: nexentastor5-nfs-provisioner-wip
     spec:
       containers:
-        - name: nexentastor5-nfs-provisioner
-          image:  quay.io/alexey_khodos/nexentastor5-nfs-provisioner
-          imagePullPolicy: "IfNotPresent"
-          volumeMounts:
-            - name: src
-              mountPath: /mnt
+        - name: nexentastor5-nfs-provisioner-wip
+          image:  quay.io/alexey_khodos/nexentastor5-nfs-provisioner:wip
+          imagePullPolicy: "Always"
           env:
             - name: NEXENTA_HOSTNAME
-              value: 10.3.199.29
+              value: "10.3.199.29"
             - name: NEXENTA_HOSTPORT
               value: "8443"
             - name: NEXENTA_PASSWORD
@@ -28,9 +25,11 @@ spec:
             - name: NEXENTA_USERNAME
               value: "admin"
             - name: NEXENTA_POOL
-              value: QA
+              value: "QA"
             - name: NEXENTA_PARENT_FILESYSTEM
               value: "kubernetes"
+            - name: IGNORE_SSL_CERTIFICATES
+              value: "true"
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
