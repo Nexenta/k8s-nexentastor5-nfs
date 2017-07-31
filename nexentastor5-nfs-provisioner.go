@@ -293,10 +293,10 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
     }
     p.checkError(resp)
     defer resp.Body.Close()
-    body, err = ioutil.ReadAll(resp.Body)
-    if (err != nil) {
-        glog.Error(err)
-    }
+    // body, err = ioutil.ReadAll(resp.Body)
+    // if (err != nil) {
+    //     glog.Error(err)
+    // }
     if (resp.StatusCode == 202) {
         body, err = p.resend202(body)
     }
@@ -337,10 +337,10 @@ func (p *NexentaStorProvisioner) https_auth() (token string, err error){
     }
     p.checkError(resp)
     defer resp.Body.Close()
-    body, err = ioutil.ReadAll(resp.Body)
-    if (err != nil) {
-        glog.Error(err)
-    }
+    // body, err = ioutil.ReadAll(resp.Body)
+    // if (err != nil) {
+    //     glog.Error(err)
+    // }
     r := make(map[string]interface{})
     jsonErr = json.Unmarshal(body, &r)
     if (jsonErr != nil) {
