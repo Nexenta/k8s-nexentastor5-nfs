@@ -44,6 +44,7 @@ import (
 const (
     provisionerName           = "nexenta.com/k8s-nexentastor5-nfs"
     defaultParentFilesystem   = "kubernetes"
+    defaultPort               = "8443"
 )
 
 type NexentaStorProvisioner struct {
@@ -74,7 +75,7 @@ func NewNexentaStorProvisioner() controller.Provisioner {
     }
     port := os.Getenv("NEXENTA_HOSTPORT")
     if port == "" {
-        glog.Fatal("env variable NEXENTA_HOSTPORT must be set to communicate with NexentaStor")
+        port = defaultPort
     }
     pool := os.Getenv("NEXENTA_POOL")
     if pool == "" {
@@ -110,12 +111,20 @@ func NewNexentaStorProvisioner() controller.Provisioner {
 }
 
 func (p *NexentaStorProvisioner) Initialize() {
-    data := map[string]interface{} {
-        "path": filepath.Join(p.Path),
-    }
-    _, err:= p.Request("POST", "storage/filesystems", data)
-    if (err != nil) {
-        glog.Fatal("Failed to Initialize NexentaStor NFS plugin.", err)
+    path := p.Pool
+    for _, v := range(strings.Split(p.ParentFS, "/")) {
+        path = filepath.Join(path, v)
+        data := map[string]interface{} {
+            "path": path,
+        }
+        _, err:= p.Request("POST", "storage/filesystems", data)
+        if (err != nil) {
+            if strings.Contains(err.Error(), "EEXIST") {
+                glog.Infof("Filesystem %s already exists, skipping.", p.ParentFS)
+            } else {
+                glog.Fatal("Failed to Initialize NexentaStor NFS plugin.", err)
+            }
+        }
     }
 }
 
@@ -169,7 +178,7 @@ func (p *NexentaStorProvisioner) Provision(options controller.VolumeOptions) (pv
         "filesystem": filepath.Join(p.Path, options.PVName),
     }
     p.Request("POST", "nas/nfs", data)
-    url := "storage/filesystems/" + p.Pool + "%2F" + p.ParentFS + "%2F" + options.PVName
+    url := "storage/filesystems/" + url.QueryEscape(filepath.Join(p.Pool, p.ParentFS, options.PVName))
     resp, err := p.Request("GET", url, nil)
     r := make(map[string]interface{})
     jsonErr := json.Unmarshal(resp, &r)
@@ -207,8 +216,12 @@ func (p *NexentaStorProvisioner) Delete(volume *v1.PersistentVolume) error {
     path := volume.Spec.PersistentVolumeSource.NFS.Path[1:]
     glog.Info("Deleting Volume ", path)
     body, err := p.Request("DELETE",  filepath.Join("storage/filesystems/", url.QueryEscape(path)), nil)
-    if strings.Contains(string(body), "ENOENT") {
-        glog.Info("Error trying to delete volume ", path, " :", err)
+    if err != nil {
+        if strings.Contains(string(body), "ENOENT") {
+            glog.Info("Error trying to delete volume ", path, " :", err)
+        } else {
+            glog.Fatal(err)
+        }
     }
     return nil
 }
@@ -316,21 +329,21 @@ func (p *NexentaStorProvisioner) https_auth() (token string, err error){
     resp, err := client.Do(req)
     if err != nil {
         glog.Error("Error while handling request: %s", err)
-        return nil, err
+        return "", err
     }
 
     defer resp.Body.Close()
     body, readErr := ioutil.ReadAll(resp.Body)
     if readErr != nil {
         glog.Errorf("Error while handling request %s", readErr)
-        return nil, readErr
+        return "", readErr
     }
     var msg interface{}
     if body != nil {
         jsonErr := json.Unmarshal(body, &msg)
         if jsonErr!= nil {
             glog.Errorf("Error while trying to unmarshal json: %s", jsonErr)
-            return nil, jsonErr
+            return "", jsonErr
         }
     }
     glog.Info("Got response: ", resp.StatusCode, msg)
@@ -371,12 +384,22 @@ func (p *NexentaStorProvisioner) resend202(body []byte) ([]byte, error) {
     if resp.StatusCode == 202 {
         body, err = p.resend202(body)
     }
+
     body, err = ioutil.ReadAll(resp.Body)
+    var msg interface{}
+    if body != nil {
+        jsonErr := json.Unmarshal(body, &msg)
+        if jsonErr!= nil {
+            glog.Errorf("Error while trying to unmarshal json: %s", jsonErr)
+            return body, jsonErr
+        }
+    }
+    glog.Info("Got response: ", resp.StatusCode, msg)
     return body, err
 }
 
 func (p *NexentaStorProvisioner) checkError(resp *http.Response) (err error) {
-    if resp.StatusCode > 401 {
+    if resp.StatusCode >= 400 {
         body, err := ioutil.ReadAll(resp.Body)
         err = fmt.Errorf("Got error in response from Nexenta, status_code: %s, body: %s", resp.StatusCode, string(body))
         return err

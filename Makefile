@@ -16,9 +16,9 @@
 IMAGE=quay.io/alexey_khodos/nexentastor5-nfs-provisioner
 $(eval BRANCH=$(shell git rev-parse --abbrev-ref HEAD))
 ifeq ($(BRANCH),master)
-        TAG=latest
+	TAG=latest
 else
-		TAG=$(BRANCH)
+	TAG=$(BRANCH)
 endif
 
 
