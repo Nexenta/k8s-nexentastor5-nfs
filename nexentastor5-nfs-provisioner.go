@@ -167,7 +167,7 @@ func (p *NexentaStorProvisioner) Provision(options controller.VolumeOptions) (pv
             }
         }
     }
-    data["compressionMode "] = compression
+    data["compressionMode"] = compression
     data["rateLimit"] = ratelimit
     p.Request("POST", "storage/filesystems", data)
 
@@ -249,6 +249,7 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
         glog.Fatal(err)
         return
     }
+    defer resp.Body.Close()
     body, readErr := ioutil.ReadAll(resp.Body)
     if readErr != nil {
         glog.Errorf("Error while handling request %s", readErr)
@@ -292,11 +293,6 @@ func (p *NexentaStorProvisioner) Request(method, endpoint string, data map[strin
         return nil, err
     }
     p.checkError(resp)
-    defer resp.Body.Close()
-    // body, err = ioutil.ReadAll(resp.Body)
-    // if (err != nil) {
-    //     glog.Error(err)
-    // }
     if (resp.StatusCode == 202) {
         body, err = p.resend202(body)
     }
@@ -318,6 +314,7 @@ func (p *NexentaStorProvisioner) https_auth() (token string, err error){
     client := &http.Client{Transport: tr}
     req.Header.Set("Content-Type", "application/json")
     resp, err := client.Do(req)
+    defer resp.Body.Close()
     body, readErr := ioutil.ReadAll(resp.Body)
     if readErr != nil {
         glog.Errorf("Error while handling request %s", readErr)
@@ -336,11 +333,6 @@ func (p *NexentaStorProvisioner) https_auth() (token string, err error){
         return "", err
     }
     p.checkError(resp)
-    defer resp.Body.Close()
-    // body, err = ioutil.ReadAll(resp.Body)
-    // if (err != nil) {
-    //     glog.Error(err)
-    // }
     r := make(map[string]interface{})
     jsonErr = json.Unmarshal(body, &r)
     if (jsonErr != nil) {
