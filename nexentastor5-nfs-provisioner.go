@@ -386,15 +386,7 @@ func (p *NexentaStorProvisioner) resend202(body []byte) ([]byte, error) {
     }
 
     body, err = ioutil.ReadAll(resp.Body)
-    var msg interface{}
-    if body != nil {
-        jsonErr := json.Unmarshal(body, &msg)
-        if jsonErr!= nil {
-            glog.Errorf("Error while trying to unmarshal json: %s", jsonErr)
-            return body, jsonErr
-        }
-    }
-    glog.Info("Got response: ", resp.StatusCode, msg)
+    glog.Info("Got response: ", resp.StatusCode, body)
     return body, err
 }
 

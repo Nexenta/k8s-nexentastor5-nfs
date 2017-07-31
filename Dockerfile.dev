@@ -6,6 +6,7 @@ RUN go get -v github.com/kubernetes-incubator/external-storage/...; exit 0
 WORKDIR "/go/src/github.com/kubernetes-incubator/external-storage/"
 RUN git checkout 8aeb2d0
 ARG BRANCH
+RUN echo $BRANCH
 RUN git clone -b $BRANCH https://github.com/nexenta/k8s-nexentastor5-nfs
 WORKDIR "/go/src/github.com/kubernetes-incubator/external-storage/k8s-nexentastor5-nfs"
 RUN go build nexentastor5-nfs-provisioner.go
