@@ -342,10 +342,10 @@ func (p *NexentaStorProvisioner) https_auth() (token string, err error){
         glog.Error(err)
     }
     r := make(map[string]interface{})
-    err = json.Unmarshal(body, &r)
-    if (err != nil) {
-        err = fmt.Errorf("Error while trying to unmarshal json: %s", err)
-        return "", err
+    jsonErr = json.Unmarshal(body, &r)
+    if (jsonErr != nil) {
+        jsonErr = fmt.Errorf("Error while trying to unmarshal json: %s", jsonErr)
+        // return "", jsonErr
     }
     return r["token"].(string), err
 }
