@@ -5,7 +5,9 @@ RUN apk update && apk add git
 RUN go get -v github.com/kubernetes-incubator/external-storage/...; exit 0
 WORKDIR "/go/src/github.com/kubernetes-incubator/external-storage/"
 RUN git checkout 8aeb2d0
-RUN git clone https://github.com/nexenta/k8s-nexentastor5-nfs
+ARG BRANCH
+RUN echo $BRANCH
+RUN git clone -b $BRANCH https://github.com/nexenta/k8s-nexentastor5-nfs
 WORKDIR "/go/src/github.com/kubernetes-incubator/external-storage/k8s-nexentastor5-nfs"
 RUN go build nexentastor5-nfs-provisioner.go
 RUN cp nexentastor5-nfs-provisioner /go/bin/

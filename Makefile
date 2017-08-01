@@ -13,9 +13,13 @@
 # limitations under the License.
 
 
-$(eval BRANCH=$(shell git rev-parse --abbrev-ref HEAD))
-TAG=$(BRANCH)
 IMAGE=quay.io/alexey_khodos/nexentastor5-nfs-provisioner
+$(eval BRANCH=$(shell git rev-parse --abbrev-ref HEAD))
+ifeq ($(BRANCH),master)
+	TAG=latest
+else
+	TAG=$(BRANCH)
+endif
 
 
 all: clean image clean
@@ -28,7 +32,7 @@ image: nexentastor5-nfs-provisioner
 .PHONY: nexentastor5-nfs-provisioner
 nexentastor5-nfs-provisioner:
 	@echo "### docker build: builder image"
-	@docker build -q -t builder -f Dockerfile.dev .
+	@docker build  --build-arg BRANCH=$(BRANCH) -q -t builder -f Dockerfile.dev .
 	@echo "### extract binary"
 	@docker create --name tmp builder
 	@docker start -i tmp
@@ -39,7 +43,7 @@ nexentastor5-nfs-provisioner:
 
 .PHONY: clean
 clean:
-	@rm -rf bin
+	@rm -rf bin nexentastor5-nfs-provisioner
 	@docker rm -vf tmp || true
 	@docker rmi builder || true
 
