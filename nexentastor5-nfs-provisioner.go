@@ -190,7 +190,7 @@ func (p *NexentaStorProvisioner) Provision(options controller.VolumeOptions) (pv
             Name: options.PVName,
             Annotations: map[string]string{
                 "nexentaStorProvisionerIdentity": p.Identity,
-                "volume.beta.kubernetes.io/mount-options": "soft"
+                "volume.beta.kubernetes.io/mount-options": "soft",
             },
         },
         Spec: v1.PersistentVolumeSpec{
