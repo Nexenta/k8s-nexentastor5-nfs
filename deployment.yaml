@@ -1,7 +1,7 @@
 kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
-  name: nexentastor5-nfs-provisioner-wip
+  name: nexentastor5-nfs-provisioner
 spec:
   replicas: 1
   strategy:
@@ -9,11 +9,11 @@ spec:
   template:
     metadata:
       labels:
-        app: nexentastor5-nfs-provisioner-wip
+        app: nexentastor5-nfs-provisioner
     spec:
       containers:
-        - name: nexentastor5-nfs-provisioner-wip
-          image:  quay.io/alexey_khodos/nexentastor5-nfs-provisioner:wip
+        - name: nexentastor5-nfs-provisioner
+          image:  quay.io/alexey_khodos/nexentastor5-nfs-provisioner
           imagePullPolicy: "Always"
           env:
             - name: NEXENTA_HOSTNAME

@@ -13,9 +13,13 @@
 # limitations under the License.
 
 
-$(eval BRANCH=$(shell git rev-parse --abbrev-ref HEAD))
-TAG=$(BRANCH)
 IMAGE=quay.io/alexey_khodos/nexentastor5-nfs-provisioner
+$(eval BRANCH=$(shell git rev-parse --abbrev-ref HEAD))
+ifeq ($(BRANCH),master)
+	TAG=latest
+else
+	TAG=$(BRANCH)
+endif
 
 
 all: clean image clean

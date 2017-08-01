@@ -18,4 +18,4 @@ spec:
   volumes:
     - name: nexentastor5-nfs-pvc
       persistentVolumeClaim:
-        claimName: nexentastor5-nfs-wip
+        claimName: nexentastor5-nfs
